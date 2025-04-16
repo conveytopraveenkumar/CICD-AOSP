@@ -74,8 +74,8 @@ jobs:
             --region us-east-1 \
             --query "Command.CommandId" --output text
 
-      # Step 7: Initialize AOSP repo on EC2
-      - name: Initialize AOSP repo on EC2
+      # Step 7: Set Up AOSP Repository
+      - name: Initialize AOSP Repo on EC2
         run: |
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
@@ -85,6 +85,8 @@ jobs:
               "sudo chown -R ubuntu:ubuntu /home/ubuntu/aosp",
               "export PATH=/usr/bin:$PATH",
               "cd /home/ubuntu/aosp",
+              "git config --global user.name \"praveenkumar\"",
+              "git config --global user.email \"conveytopraveenkumar@gmail.com\"",
               "repo init -u https://android.googlesource.com/platform/manifest || { echo \"Repo init failed!\"; exit 1; }",
               "repo sync -c || { echo \"Repo sync failed!\"; exit 1; }"
             ]}' \
