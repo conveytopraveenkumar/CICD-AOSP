@@ -50,16 +50,22 @@ jobs:
             sleep 10
           done
 
-      - name: Initialize & Sync AOSP Repo
+      # Install AWS CLI, Repo, and Initialize AOSP
+      - name: Install AWS CLI and Repo via SSM
         run: |
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "[{\"Key\":\"InstanceIds\",\"Values\":[\"$INSTANCE_ID\"]}]" \
             --parameters '{"commands":[
-              "mkdir -p /home/ubuntu/aosp",
-              "cd /home/ubuntu/aosp",
-              "/usr/bin/repo init -u https://android.googlesource.com/platform/manifest 2>&1 | tee /home/ubuntu/aosp/repo-init.log",
-              "/usr/bin/repo sync -c 2>&1 | tee /home/ubuntu/aosp/repo-sync.log"
+              "sudo apt update && sudo apt install -y unzip git repo",
+              "curl -o awscliv2.zip \"https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip\"",
+              "unzip awscliv2.zip",
+              "sudo ./aws/install",
+              "aws --version || { echo \"AWS CLI installation failed!\"; exit 1; }",
+              "repo --version || { echo \"Repo installation failed!\"; exit 1; }",
+              "mkdir -p /home/ubuntu/aosp && cd /home/ubuntu/aosp",
+              "repo init -u https://android.googlesource.com/platform/manifest 2>&1 | tee /home/ubuntu/aosp/repo-init.log",
+              "for i in {1..3}; do repo sync -c 2>&1 | tee -a /home/ubuntu/aosp/repo-sync.log && break || sleep 30; done",
+              "ls -la /home/ubuntu/aosp/.repo || { echo \"Repo initialization failed!\"; exit 1; }"
             ]}' \
             --region us-east-1
-
