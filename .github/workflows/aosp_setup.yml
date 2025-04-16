@@ -10,11 +10,9 @@ jobs:
   setup_aosp:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -22,7 +20,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      # Step 3: Launch EC2 Instance
       - name: Launch EC2 Instance
         run: |
           INSTANCE_ID=$(aws ec2 run-instances --image-id ami-09eb231ad55c3963d \
@@ -34,12 +31,10 @@ jobs:
             --query "Instances[0].InstanceId" --output text)
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
 
-      # Step 4: Wait for EC2 Instance to Start
       - name: Wait for EC2 Instance to Start
         run: aws ec2 wait instance-running --instance-ids $INSTANCE_ID
 
-      # Step 5: Ensure EC2 Instance Is Fully Initialized
-      - name: Ensure EC2 Instance Is Ready
+      - name: Ensure EC2 Instance Is Fully Initialized
         run: |
           while true; do
             INSTANCE_STATE=$(aws ec2 describe-instance-status --instance-ids $INSTANCE_ID --query "InstanceStatuses[0].InstanceState.Name" --output text)
@@ -55,41 +50,16 @@ jobs:
             sleep 10
           done
 
-      # Step 6: Install AWS CLI and Repo on EC2 via SSM
-      - name: Install AWS CLI and Repo via SSM
+      - name: Initialize & Sync AOSP Repo
         run: |
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "[{\"Key\":\"InstanceIds\",\"Values\":[\"$INSTANCE_ID\"]}]" \
             --parameters '{"commands":[
-              "sudo apt update",
-              "sudo apt install -y unzip git repo",
-              "curl \"https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip\" -o \"awscliv2.zip\"",
-              "unzip awscliv2.zip",
-              "sudo ./aws/install",
-              "aws --version || { echo \"AWS CLI installation failed!\"; exit 1; }",
-              "repo --version || { echo \"Repo installation failed!\"; exit 1; }",
-              "aws sts get-caller-identity || { echo \"AWS credentials not configured!\"; exit 1; }"
-            ]}' \
-            --region us-east-1 \
-            --query "Command.CommandId" --output text
-
-      # Step 7: Set Up AOSP Repository
-      - name: Install Repo & Initialize AOSP
-        run: |
-          aws ssm send-command \
-            --document-name "AWS-RunShellScript" \
-            --targets "[{\"Key\":\"InstanceIds\",\"Values\":[\"$INSTANCE_ID\"]}]" \
-            --parameters '{"commands":[
-              "sudo apt update",
-              "sudo apt install -y repo",
-              "sudo mv /usr/bin/repo /usr/bin/repo.bak",
-              "sudo cp /home/ubuntu/aosp/.repo/repo/repo /usr/bin/repo",
-              "sudo chmod +x /usr/bin/repo",
-              "repo --version >> /home/ubuntu/repo-version.log",
+              "mkdir -p /home/ubuntu/aosp",
               "cd /home/ubuntu/aosp",
-              "repo init -u https://android.googlesource.com/platform/manifest 2>&1 | tee /home/ubuntu/repo-init.log",
-              "repo sync -c 2>&1 | tee /home/ubuntu/repo-sync.log"
+              "/usr/bin/repo init -u https://android.googlesource.com/platform/manifest 2>&1 | tee /home/ubuntu/aosp/repo-init.log",
+              "/usr/bin/repo sync -c 2>&1 | tee /home/ubuntu/aosp/repo-sync.log"
             ]}' \
-            --region us-east-1 \
-            --query "Command.CommandId" --output text
+            --region us-east-1
+
