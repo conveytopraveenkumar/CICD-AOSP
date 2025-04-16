@@ -83,17 +83,13 @@ jobs:
             --parameters '{"commands":[
               "sudo apt update",
               "sudo apt install -y repo",
-              "sudo mkdir -p /home/ubuntu/aosp",
-              "sudo chown -R ubuntu:ubuntu /home/ubuntu/aosp",
-              "export PATH=/usr/bin:$PATH",
+              "sudo mv /usr/bin/repo /usr/bin/repo.bak",
+              "sudo cp /home/ubuntu/aosp/.repo/repo/repo /usr/bin/repo",
+              "sudo chmod +x /usr/bin/repo",
+              "repo --version >> /home/ubuntu/repo-version.log",
               "cd /home/ubuntu/aosp",
-              "git config --global user.name \"praveenkumar\"",
-              "git config --global user.email \"conveytopraveenkumar@gmail.com\"",
               "repo init -u https://android.googlesource.com/platform/manifest 2>&1 | tee /home/ubuntu/repo-init.log",
               "repo sync -c 2>&1 | tee /home/ubuntu/repo-sync.log"
             ]}' \
             --region us-east-1 \
             --query "Command.CommandId" --output text
-
-
-
