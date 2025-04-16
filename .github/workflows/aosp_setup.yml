@@ -87,8 +87,8 @@ jobs:
               "cd /home/ubuntu/aosp",
               "git config --global user.name \"praveenkumar\"",
               "git config --global user.email \"conveytopraveenkumar@gmail.com\"",
-              "repo init -u https://android.googlesource.com/platform/manifest || { echo \"Repo init failed!\"; exit 1; }",
-              "repo sync -c || { echo \"Repo sync failed!\"; exit 1; }"
+              "sudo -u ubuntu -i sh -c \"cd /home/ubuntu/aosp && /usr/bin/repo init -u https://android.googlesource.com/platform/manifest || { echo 'Repo init failed!'; exit 1; }\"",
+              "sudo -u ubuntu -i sh -c \"cd /home/ubuntu/aosp && /usr/bin/repo sync -c || { echo 'Repo sync failed!'; exit 1; }\""
             ]}' \
             --region us-east-1 \
             --query "Command.CommandId" --output text
