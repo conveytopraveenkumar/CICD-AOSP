@@ -54,35 +54,38 @@ jobs:
             fi
             sleep 10
           done
-          
-            # Step 6: Install AWS CLI on EC2 via SSM
-      - name: Install AWS CLI via SSM
+
+      # Step 6: Install AWS CLI and Repo on EC2 via SSM
+      - name: Install AWS CLI and Repo via SSM
         run: |
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "[{\"Key\":\"InstanceIds\",\"Values\":[\"$INSTANCE_ID\"]}]" \
             --parameters '{"commands":[
               "sudo apt update",
-              "sudo apt install -y unzip git",
+              "sudo apt install -y unzip git repo",
               "curl \"https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip\" -o \"awscliv2.zip\"",
               "unzip awscliv2.zip",
               "sudo ./aws/install",
               "aws --version || { echo \"AWS CLI installation failed!\"; exit 1; }",
+              "repo --version || { echo \"Repo installation failed!\"; exit 1; }",
               "aws sts get-caller-identity || { echo \"AWS credentials not configured!\"; exit 1; }"
             ]}' \
             --region us-east-1 \
             --query "Command.CommandId" --output text
-      # Step 7: Run AOSP Setup via SSM
+
+      # Step 7: Initialize AOSP repo on EC2 and ensure correct directory creation
       - name: Initialize AOSP repo on EC2
         run: |
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "[{\"Key\":\"InstanceIds\",\"Values\":[\"$INSTANCE_ID\"]}]" \
             --parameters '{"commands":[
-              "mkdir -p ~/aosp",
-              "cd ~/aosp",
+              "sudo mkdir -p /home/ubuntu/aosp",
+              "sudo chown -R ubuntu:ubuntu /home/ubuntu/aosp",
+              "cd /home/ubuntu/aosp",
               "repo init -u https://android.googlesource.com/platform/manifest",
-              "~/bin/repo sync -c)"
+              "repo sync -c"
             ]}' \
             --region us-east-1 \
             --query "Command.CommandId" --output text
