@@ -74,7 +74,7 @@ jobs:
             --region us-east-1 \
             --query "Command.CommandId" --output text
 
-      # Step 7: Initialize AOSP repo on EC2 and ensure correct directory creation
+      # Step 7: Initialize AOSP repo on EC2
       - name: Initialize AOSP repo on EC2
         run: |
           aws ssm send-command \
@@ -83,9 +83,10 @@ jobs:
             --parameters '{"commands":[
               "sudo mkdir -p /home/ubuntu/aosp",
               "sudo chown -R ubuntu:ubuntu /home/ubuntu/aosp",
+              "export PATH=/usr/bin:$PATH",
               "cd /home/ubuntu/aosp",
-              "repo init -u https://android.googlesource.com/platform/manifest",
-              "repo sync -c"
+              "repo init -u https://android.googlesource.com/platform/manifest || { echo \"Repo init failed!\"; exit 1; }",
+              "repo sync -c || { echo \"Repo sync failed!\"; exit 1; }"
             ]}' \
             --region us-east-1 \
             --query "Command.CommandId" --output text
