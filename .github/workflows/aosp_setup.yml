@@ -75,22 +75,25 @@ jobs:
             --query "Command.CommandId" --output text
 
       # Step 7: Set Up AOSP Repository
-      - name: Initialize AOSP Repo on EC2
+      - name: Install Repo & Initialize AOSP
         run: |
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "[{\"Key\":\"InstanceIds\",\"Values\":[\"$INSTANCE_ID\"]}]" \
             --parameters '{"commands":[
+              "sudo apt update",
+              "sudo apt install -y repo",
               "sudo mkdir -p /home/ubuntu/aosp",
               "sudo chown -R ubuntu:ubuntu /home/ubuntu/aosp",
               "export PATH=/usr/bin:$PATH",
               "cd /home/ubuntu/aosp",
               "git config --global user.name \"praveenkumar\"",
               "git config --global user.email \"conveytopraveenkumar@gmail.com\"",
-              "sudo -u ubuntu -i sh -c \"cd /home/ubuntu/aosp && /usr/bin/repo init -u https://android.googlesource.com/platform/manifest 2>&1 | tee /home/ubuntu/repo-init.log\"",
-              "sudo -u ubuntu -i sh -c \"cd /home/ubuntu/aosp && /usr/bin/repo sync -c 2>&1 | tee /home/ubuntu/repo-sync.log\""
+              "repo init -u https://android.googlesource.com/platform/manifest 2>&1 | tee /home/ubuntu/repo-init.log",
+              "repo sync -c 2>&1 | tee /home/ubuntu/repo-sync.log"
             ]}' \
             --region us-east-1 \
             --query "Command.CommandId" --output text
+
 
 
